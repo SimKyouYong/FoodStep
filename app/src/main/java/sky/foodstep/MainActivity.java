@@ -1,6 +1,10 @@
 package sky.foodstep;
 
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -23,6 +27,7 @@ import sky.foodstep.obj.DataObj;
 * AIzaSyC1bRHhlzxfHtELQLq1gqK2yV2XvfzXlgA
 * */
 public class MainActivity extends ActivityEx {
+    LocationManager myLocationManager;
 
     String [][]Object_Array;
     private ArrayList<DataObj> arr = new ArrayList<DataObj>();
@@ -32,10 +37,18 @@ public class MainActivity extends ActivityEx {
     private AccumThread mThread;
     private String idBySerialNumber;
 
+    Boolean GPSSTATUS = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        if (myLocationManager == null) {
+            myLocationManager = (LocationManager)getSystemService(
+                    Context.LOCATION_SERVICE);
+        }
+
+
 
         try {
             idBySerialNumber = (String) Build.class.getField("SERIAL").get(null);
@@ -72,9 +85,45 @@ public class MainActivity extends ActivityEx {
 
 
     }
+    // GPS 설정화면으로 이동
+    private void moveConfigGPS() {
+        Intent gpsOptionsIntent = new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+        startActivityForResult(gpsOptionsIntent , 1);
+    }
+    private void alertCheckGPS() {
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this , AlertDialog.THEME_DEVICE_DEFAULT_DARK);
+        builder.setMessage("원활한 서비스를 위해\nGPS를 활성화를 부탁 드립니다.");
+        builder.setCancelable(false);
+        builder.setPositiveButton("확인",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        moveConfigGPS();
+                    }
+                });
+        builder.setNegativeButton("취소",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        GPSSTATUS = false;
+                        dialog.cancel();
+                    }
+                });
+
+        AlertDialog alert = builder.create();
+        alert.show();
+    }
     //버튼 리스너 구현 부분
     View.OnClickListener btnListener = new View.OnClickListener() {
         public void onClick(View v) {
+
+            Boolean isGpsEnabled = myLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+            Log.e("SKY" , "isGpsEnabled :: " + isGpsEnabled);
+            if (!isGpsEnabled) {
+                GPSSTATUS = false;
+                alertCheckGPS();
+                return;
+            }
+
             customProgressPop();
             map.put("url", DEFINE.SERVER_URL + "FOODSTEP_SELECT.php");
             switch (v.getId()) {
@@ -91,7 +140,7 @@ public class MainActivity extends ActivityEx {
                     map.put("TYPE",    "중식");
                     break;
                 case R.id.btn5:
-                    map.put("TYPE",    "그외");
+                    map.put("TYPE",    "그 외");
                     break;
                 case R.id.btn6:
                     map.put("TYPE",    "ALL");
@@ -117,7 +166,7 @@ public class MainActivity extends ActivityEx {
                 map.put("url", DEFINE.SERVER_URL + "FOODSTEP_LOGIN.php");
                 map.put("DEVICE_KEY",    idBySerialNumber);
                 //스레드 생성
-                mThread = new AccumThread(MainActivity.this , mAfterAccum , map , 0 , 1 , null);
+                mThread = new AccumThread(MainActivity.this , mAfterAccum , map , 0 , 2 , null);
                 mThread.start();		//스레드 시작!!
             }else if (msg.arg1  == 1 ) {
                 customProgressClose();
@@ -149,7 +198,7 @@ public class MainActivity extends ActivityEx {
                 intent6.putParcelableArrayListExtra("obj" , arr);
                 startActivity(intent6);
 
-        }else{
+        }else if(msg.arg1  == 2){
                 //로그인 성공
                 String res = (String)msg.obj;
                 Log.e("CHECK" , "RESULT  -> " + res);

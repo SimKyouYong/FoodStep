@@ -237,7 +237,7 @@ public class DetailActivity extends AppCompatActivity implements OnMapReadyCallb
         mGoogleMap = googleMap;
         //런타임 퍼미션 요청 대화상자나 GPS 활성 요청 대화상자 보이기전에
         //지도의 초기위치를 서울로 이동
-        setDefaultLocation();
+        //setDefaultLocation();
         //mGoogleMap.getUiSettings().setZoomControlsEnabled(false);
         mGoogleMap.getUiSettings().setMyLocationButtonEnabled(true);
         mGoogleMap.animateCamera(CameraUpdateFactory.zoomTo(15));
@@ -291,13 +291,21 @@ public class DetailActivity extends AppCompatActivity implements OnMapReadyCallb
             mGoogleMap.setOnMarkerClickListener(new OnMarkerClickListener() {
 
                 public boolean onMarkerClick(Marker marker) {
+
+                    if(!marker.getTitle().contains(".")){
+                        return true;
+                    }
                     String text = "[마커 클릭 이벤트] latitude ="
                             + marker.getPosition().latitude + ", longitude ="
                             + marker.getPosition().longitude;
                     Log.e("SKY" , "marker.getTitle()" + marker.getTitle());
                     String[] posittion = marker.getTitle().split(". ");
-                    Toast.makeText(getApplicationContext(), text  + posittion[0], Toast.LENGTH_LONG).show();
+                    //Toast.makeText(getApplicationContext(), text  + posittion[0], Toast.LENGTH_LONG).show();
                     ThisDataIndex = posittion[0];
+
+                    name.setText("" + arr.get(Integer.parseInt(posittion[0])).getNAME());
+                    address.setText("주소 : " + arr.get(Integer.parseInt(posittion[0])).getADDRESS());
+                    menu.setText("메뉴\n" + arr.get(Integer.parseInt(posittion[0])).getMENU());
 
 
                     customProgressPop();
