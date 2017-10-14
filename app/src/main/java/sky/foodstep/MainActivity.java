@@ -1,12 +1,15 @@
 package sky.foodstep;
 
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.View;
 import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,12 +17,16 @@ import co.kr.sky.AccumThread;
 import sky.foodstep.common.ActivityEx;
 import sky.foodstep.common.Check_Preferences;
 import sky.foodstep.common.DEFINE;
+import sky.foodstep.obj.DataObj;
 
 /*
 * AIzaSyC1bRHhlzxfHtELQLq1gqK2yV2XvfzXlgA
 * */
 public class MainActivity extends ActivityEx {
 
+    String [][]Object_Array;
+    private ArrayList<DataObj> arr = new ArrayList<DataObj>();
+    private String []val = {"KEY_INDEX","NAME","ADDRESS","MENU","TYPE","NUMBER","LO_WI","LO_GY" };
 
     private Map<String, String> map = new HashMap<String, String>();
     private AccumThread mThread;
@@ -41,7 +48,7 @@ public class MainActivity extends ActivityEx {
         if(Check_Preferences.getAppPreferences(this , "KEY_INDEX").equals("")){
             //회원가입
             customProgressPop();
-            map.put("url", DEFINE.SERVER_URL + "MEMBER_JOIN.php");
+            map.put("url", DEFINE.SERVER_URL + "FOODSTEP_JOIN.php");
             map.put("DEVICE_KEY",    idBySerialNumber);
             //스레드 생성
             mThread = new AccumThread(this , mAfterAccum , map , 0 , 0 , null);
@@ -56,11 +63,45 @@ public class MainActivity extends ActivityEx {
         //TABLE : FOODSTEP_MEMBER(KEY_INDEX , DEVICE_KEY , DATE)
 
 
+        findViewById(R.id.btn1).setOnClickListener(btnListener);
+        findViewById(R.id.btn2).setOnClickListener(btnListener);
+        findViewById(R.id.btn3).setOnClickListener(btnListener);
+        findViewById(R.id.btn4).setOnClickListener(btnListener);
+        findViewById(R.id.btn5).setOnClickListener(btnListener);
+        findViewById(R.id.btn6).setOnClickListener(btnListener);
 
-        //Intent intent4 = new Intent(MainActivity.this, DetailActivity.class);
-        //startActivity(intent4);
+
     }
-
+    //버튼 리스너 구현 부분
+    View.OnClickListener btnListener = new View.OnClickListener() {
+        public void onClick(View v) {
+            customProgressPop();
+            map.put("url", DEFINE.SERVER_URL + "FOODSTEP_SELECT.php");
+            switch (v.getId()) {
+                case R.id.btn1:
+                    map.put("TYPE",    "한식");
+                    break;
+                case R.id.btn2:
+                    map.put("TYPE",    "일식");
+                    break;
+                case R.id.btn3:
+                    map.put("TYPE",    "양식");
+                    break;
+                case R.id.btn4:
+                    map.put("TYPE",    "중식");
+                    break;
+                case R.id.btn5:
+                    map.put("TYPE",    "그외");
+                    break;
+                case R.id.btn6:
+                    map.put("TYPE",    "ALL");
+                    break;
+            }
+            //스레드 생성
+            mThread = new AccumThread(MainActivity.this , mAfterAccum , map , 1 , 1 , val);
+            mThread.start();		//스레드 시작!!
+        }
+    };
     Handler mAfterAccum = new Handler()
     {
         @Override
@@ -73,12 +114,42 @@ public class MainActivity extends ActivityEx {
 
                 //회원가입
                 customProgressPop();
-                map.put("url", DEFINE.SERVER_URL + "MEMBER_LOGIN.php");
+                map.put("url", DEFINE.SERVER_URL + "FOODSTEP_LOGIN.php");
                 map.put("DEVICE_KEY",    idBySerialNumber);
                 //스레드 생성
                 mThread = new AccumThread(MainActivity.this , mAfterAccum , map , 0 , 1 , null);
                 mThread.start();		//스레드 시작!!
-            }else{
+            }else if (msg.arg1  == 1 ) {
+                customProgressClose();
+                arr.clear();
+                Object_Array = (String [][]) msg.obj;
+                if (Object_Array.length == 0) {
+                    return;
+                }
+                //				Log.e("CHECK" ,"**********************  --->" + Object_Array[0].length);
+                for (int i = 0; i < Object_Array.length; i++) {
+                    for (int j = 0; j < Object_Array[0].length; j++) {
+                        Log.e("CHECK" ,"value----> ---> Object_Array [" +i+"]["+j+"]"+  Object_Array[i][j]);
+                    }
+                }
+                for (int i = 0; i < (Object_Array[0].length); i++){
+                    if (Object_Array[0][i] != null) {
+                      arr.add(new DataObj(""+Object_Array[0][i],
+                                Object_Array[1][i],
+                                Object_Array[2][i],
+                                Object_Array[3][i],
+                                Object_Array[4][i],
+                                Object_Array[5][i],
+                                Object_Array[6][i],
+                                Object_Array[7][i]
+                        ));
+                    }
+                }
+                Intent intent6 = new Intent(MainActivity.this, DetailActivity.class);
+                intent6.putParcelableArrayListExtra("obj" , arr);
+                startActivity(intent6);
+
+        }else{
                 //로그인 성공
                 String res = (String)msg.obj;
                 Log.e("CHECK" , "RESULT  -> " + res);

@@ -3,6 +3,7 @@ package sky.foodstep;
 
 import android.Manifest;
 import android.annotation.TargetApi;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -13,14 +14,21 @@ import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -37,10 +45,23 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener;
+
+
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+
+import co.kr.sky.AccumThread;
+import sky.foodstep.adapter.Comment_Adapter;
+import sky.foodstep.common.Check_Preferences;
+import sky.foodstep.common.DEFINE;
+import sky.foodstep.obj.CommentObj;
+import sky.foodstep.obj.DataObj;
 
 
 
@@ -51,8 +72,10 @@ public class DetailActivity extends AppCompatActivity implements OnMapReadyCallb
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
         LocationListener{
+    String [][]Object_Array;
 
-
+    private Map<String, String> map = new HashMap<String, String>();
+    private AccumThread mThread;
     private GoogleApiClient mGoogleApiClient = null;
     private GoogleMap mGoogleMap = null;
     private Marker currentMarker = null;
@@ -62,6 +85,7 @@ public class DetailActivity extends AppCompatActivity implements OnMapReadyCallb
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 2002;
     private static final int UPDATE_INTERVAL_MS = 1000;  // 1초
     private static final int FASTEST_UPDATE_INTERVAL_MS = 500; // 0.5초
+    protected ProgressDialog  customDialog = null;
 
     private AppCompatActivity mActivity;
     boolean askPermissionOnceAgain = false;
@@ -69,7 +93,20 @@ public class DetailActivity extends AppCompatActivity implements OnMapReadyCallb
     Location mCurrentLocatiion;
     boolean mMoveMapByUser = true;
     boolean mMoveMapByAPI = true;
+    private String []val = {"KEY_INDEX","DATA_INDEX","ID","BODY","DATE"};
 
+
+
+    private  String ThisDataIndex = "";
+    Comment_Adapter m_Adapter;
+    ListView list_number;
+
+
+    private EditText edit_comment;
+    private TextView name , address , menu;
+    private MapFragment mapFragment;
+    private ArrayList<DataObj> arr = new ArrayList<DataObj>();
+    private ArrayList<CommentObj> arr2 = new ArrayList<CommentObj>();
     LocationRequest locationRequest = new LocationRequest()
             .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
             .setInterval(UPDATE_INTERVAL_MS)
@@ -80,40 +117,127 @@ public class DetailActivity extends AppCompatActivity implements OnMapReadyCallb
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
+        ActionBar actionBar = getSupportActionBar();
+        actionBar.hide();
 
+        list_number = (ListView)findViewById(R.id.list);
+        edit_comment = (EditText)findViewById(R.id.edit_comment);
+
+        mGoogleApiClient = new GoogleApiClient.Builder(DetailActivity.this)
+                .addConnectionCallbacks(DetailActivity.this)
+                .addOnConnectionFailedListener(DetailActivity.this)
+                .addApi(LocationServices.API)
+                .build();
 
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        name = (TextView)findViewById(R.id.name);
+        address = (TextView)findViewById(R.id.address);
+        menu = (TextView)findViewById(R.id.menu);
 
         Log.d("SKY", "onCreate");
         mActivity = this;
 
+        Intent i = getIntent();
+        //Bundle bundle = getIntent().getExtras();
+        arr = i.getParcelableArrayListExtra("obj");
+        Log.d("SKY", "arr SIZE :: " + arr.size());
 
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
+        name.setText("" + arr.get(arr.size()-1).getNAME());
+        address.setText("주소 : " + arr.get(arr.size()-1).getADDRESS());
+        menu.setText("메뉴\n" + arr.get(arr.size()-1).getMENU());
 
-
-        MapFragment mapFragment = (MapFragment) getFragmentManager()
+        mapFragment = (MapFragment) getFragmentManager()
                 .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+        mapFragment.getMapAsync(DetailActivity.this);
 
+        findViewById(R.id.comment_ok).setOnClickListener(btnListener);
+
+
+
+        customProgressPop();
+        map.put("url", DEFINE.SERVER_URL + "FOODSTEP_COMMENT.php");
+        ThisDataIndex = arr.get(arr.size()-1).getKEY_INDEX();
+        map.put("DATA_INDEX", ThisDataIndex);
+        //스레드 생성
+        mThread = new AccumThread(this , mAfterAccum , map , 1 , 2 , val);
+        mThread.start();		//스레드 시작!!
 
     }
+    //버튼 리스너 구현 부분
+    View.OnClickListener btnListener = new View.OnClickListener() {
+        public void onClick(View v) {
+            switch (v.getId()) {
+                case R.id.comment_ok:
+                    if(edit_comment.getText().toString().length() ==0){
+                        Toast.makeText(getApplicationContext() , "댓글을 입력해주세요" , Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    customProgressPop();
+                    map.put("url", DEFINE.SERVER_URL + "FOODSTEP_COMMENT_WRITE.php");
+                    map.put("ID", Check_Preferences.getAppPreferences(DetailActivity.this , "DEVICE_KEY").substring(0 , 5));
+                    map.put("DATA_INDEX", ThisDataIndex);
+                    map.put("BODY", edit_comment.getText().toString());
+                    //스레드 생성
+                    mThread = new AccumThread(DetailActivity.this , mAfterAccum , map , 0 , 0 , null);
+                    mThread.start();		//스레드 시작!!
+                    break;
+            }
+        }
+    };
+    Handler mAfterAccum = new Handler()
+    {
+        @Override
+        public void handleMessage(Message msg)
+        {
+            if(msg.arg1  == 0){
+                customProgressClose();
+                customProgressPop();
+                map.put("url", DEFINE.SERVER_URL + "FOODSTEP_COMMENT.php");
+                ThisDataIndex = arr.get(arr.size()-1).getKEY_INDEX();
+                map.put("DATA_INDEX", ThisDataIndex);
+                //스레드 생성
+                mThread = new AccumThread(DetailActivity.this , mAfterAccum , map , 1 , 2 , val);
+                mThread.start();		//스레드 시작!!
+            }
+            else if (msg.arg1  == 2 ) {
+                customProgressClose();
+                arr2.clear();
+                Object_Array = (String [][]) msg.obj;
+                if (Object_Array.length == 0) {
+                    m_Adapter = new Comment_Adapter( DetailActivity.this , arr2 );
+                    //list_number.setOnItemClickListener(mItemClickListener);
+                    list_number.setAdapter(m_Adapter);
+                    return;
+                }
+                for (int i = 0; i < Object_Array.length; i++) {
+                    for (int j = 0; j < Object_Array[0].length; j++) {
+                        Log.e("CHECK" ,"value----> ---> Object_Array [" +i+"]["+j+"]"+  Object_Array[i][j]);
+                    }
+                }
+                for (int i = 0; i < (Object_Array[0].length); i++){
+                    if (Object_Array[0][i] != null) {
+                        arr2.add(new CommentObj(""+Object_Array[0][i],
+                                Object_Array[1][i],
+                                Object_Array[2][i],
+                                Object_Array[3][i],
+                                Object_Array[4][i]
+                        ));
+                    }
+                }
+                m_Adapter = new Comment_Adapter( DetailActivity.this , arr2 );
+                //list_number.setOnItemClickListener(mItemClickListener);
+                list_number.setAdapter(m_Adapter);
+            }
+        }
+    };
     @Override
     public void onMapReady(GoogleMap googleMap) {
-
         Log.d(TAG, "onMapReady :");
-
         mGoogleMap = googleMap;
-
-
         //런타임 퍼미션 요청 대화상자나 GPS 활성 요청 대화상자 보이기전에
         //지도의 초기위치를 서울로 이동
         setDefaultLocation();
-
         //mGoogleMap.getUiSettings().setZoomControlsEnabled(false);
         mGoogleMap.getUiSettings().setMyLocationButtonEnabled(true);
         mGoogleMap.animateCamera(CameraUpdateFactory.zoomTo(15));
@@ -121,7 +245,6 @@ public class DetailActivity extends AppCompatActivity implements OnMapReadyCallb
 
             @Override
             public boolean onMyLocationButtonClick() {
-
                 Log.d( TAG, "onMyLocationButtonClick : 위치에 따른 카메라 이동 활성화");
                 mMoveMapByAPI = true;
                 return true;
@@ -131,66 +254,72 @@ public class DetailActivity extends AppCompatActivity implements OnMapReadyCallb
 
             @Override
             public void onMapClick(LatLng latLng) {
-
                 Log.d( TAG, "onMapClick :");
             }
         });
-
         mGoogleMap.setOnCameraMoveStartedListener(new GoogleMap.OnCameraMoveStartedListener() {
 
             @Override
             public void onCameraMoveStarted(int i) {
-
                 if (mMoveMapByUser == true && mRequestingLocationUpdates){
-
                     Log.d(TAG, "onCameraMove : 위치에 따른 카메라 이동 비활성화");
                     mMoveMapByAPI = false;
                 }
-
                 mMoveMapByUser = true;
-
             }
         });
-
-
         mGoogleMap.setOnCameraMoveListener(new GoogleMap.OnCameraMoveListener() {
-
             @Override
             public void onCameraMove() {
-
-
             }
         });
+
+        for (int i= 0; i < arr.size(); i++){
+            double wi = Double.parseDouble( arr.get(i).getLO_WI() );
+            double gy = Double.parseDouble( arr.get(i).getLO_GY() );
+
+            //Log.e("SKY" , "위도 :: " + wi);
+            //Log.e("SKY" , "경도 :: " + gy);
+            LatLng location = new LatLng(wi, gy);
+
+            MarkerOptions markerOptions = new MarkerOptions();
+            markerOptions.position(location);
+            markerOptions.title(i+". " + arr.get(i).getNAME());
+            markerOptions.snippet(arr.get(i).getADDRESS());
+            mGoogleMap.addMarker(markerOptions);
+
+            mGoogleMap.setOnMarkerClickListener(new OnMarkerClickListener() {
+
+                public boolean onMarkerClick(Marker marker) {
+                    String text = "[마커 클릭 이벤트] latitude ="
+                            + marker.getPosition().latitude + ", longitude ="
+                            + marker.getPosition().longitude;
+                    Log.e("SKY" , "marker.getTitle()" + marker.getTitle());
+                    String[] posittion = marker.getTitle().split(". ");
+                    Toast.makeText(getApplicationContext(), text  + posittion[0], Toast.LENGTH_LONG).show();
+                    ThisDataIndex = posittion[0];
+
+
+                    customProgressPop();
+                    map.clear();
+                    map.put("url", DEFINE.SERVER_URL + "FOODSTEP_COMMENT.php");
+                    map.put("DATA_INDEX", posittion[0]);
+                    //스레드 생성
+                    mThread = new AccumThread(DetailActivity.this , mAfterAccum , map , 1 , 2 , val);
+                    mThread.start();		//스레드 시작!!
+                    return false;
+                }
+            });
+
+
+
+            if(i == (arr.size()-1)){
+                mGoogleMap.moveCamera(CameraUpdateFactory.newLatLng(location));
+                mGoogleMap.animateCamera(CameraUpdateFactory.zoomTo(10));
+            }
+
+        }
     }
-    /*
-    @Override
-    public void onMapReady(final GoogleMap map) {
-
-        LatLng SEOUL = new LatLng(37.56, 126.97);
-
-        MarkerOptions markerOptions = new MarkerOptions();
-        markerOptions.position(SEOUL);
-        markerOptions.title("서울");
-        markerOptions.snippet("한국의 수도");
-        map.addMarker(markerOptions);
-
-        map.moveCamera(CameraUpdateFactory.newLatLng(SEOUL));
-        map.animateCamera(CameraUpdateFactory.zoomTo(10));
-//        map.setOnMarkerClickListener(new OnMarkerClickListener() {
-//
-//            public boolean onMarkerClick(Marker marker) {
-//                String text = "[마커 클릭 이벤트] latitude ="
-//                        + marker.getPosition().latitude + ", longitude ="
-//                        + marker.getPosition().longitude;
-//                Toast.makeText(getApplicationContext(), text, Toast.LENGTH_LONG)
-//                        .show();
-//                return false;
-//            }
-//        });
-
-
-    }
-    */
     @Override
     public void onResume() {
 
@@ -617,6 +746,26 @@ public class DetailActivity extends AppCompatActivity implements OnMapReadyCallb
                 }
 
                 break;
+        }
+    }
+    public void customProgressPop(){
+        try{
+            if (customDialog==null){
+                customDialog = new ProgressDialog( this , ProgressDialog.THEME_DEVICE_DEFAULT_LIGHT);
+                customDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+                customDialog.setMessage("로딩중 입니다.");
+                customDialog.show();
+            }
+        }catch(Exception ex){}
+    }
+    public void customProgressClose(){
+        if (customDialog!=null && customDialog.isShowing()){
+            try{
+                customDialog.cancel();
+                customDialog.dismiss();
+                customDialog = null;
+            }catch(Exception e)
+            {}
         }
     }
 }
