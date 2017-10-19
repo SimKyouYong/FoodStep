@@ -14,7 +14,7 @@
             android:value="AIzaSyC1bRHhlzxfHtELQLq1gqK2yV2XvfzXlgA" />
 
 
-        <activity android:name=".MainActivity">
+        <activity android:name=".IntroActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
@@ -24,6 +24,12 @@
 
         <activity
             android:name=".DetailActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize|adjustPan" />
+
+        <activity
+            android:name=".MainActivity"
             android:configChanges="keyboardHidden|orientation"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize|adjustPan" />
