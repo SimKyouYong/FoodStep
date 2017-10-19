@@ -45,7 +45,7 @@
                     android:layout_width="wrap_content"
                     android:id="@+id/all_txt"
                     android:layout_height="wrap_content"
-                    android:textSize="10dp"
+                    android:textSize="18dp"
                     android:layout_margin="10dp"
                     android:textColor="#ffffff"
                     android:text="모두보기"/>
