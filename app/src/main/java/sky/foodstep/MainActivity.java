@@ -50,6 +50,7 @@ public class MainActivity extends ActivityEx {
 
 
 
+
         try {
             idBySerialNumber = (String) Build.class.getField("SERIAL").get(null);
             Log.e("SKY" , "idBySerialNumber :: " + idBySerialNumber);

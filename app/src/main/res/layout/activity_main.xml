@@ -9,12 +9,18 @@
 
     <LinearLayout
         android:id="@+id/topview"
-        android:layout_width="wrap_content"
-        android:background="#000000"
+        android:layout_width="match_parent"
+        android:background="#900838"
         android:layout_alignParentTop="true"
         android:orientation="vertical"
-        android:layout_height="80dp">
+        android:gravity="center"
+        android:layout_height="wrap_content">
 
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="2dp"
+            android:background="@mipmap/foodstep_main_top"/>
 
     </LinearLayout>
 
@@ -26,56 +32,126 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="150dp"
+            android:layout_height="wrap_content"
             android:orientation="horizontal">
-            <Button
-                android:id="@+id/btn1"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:text="한식"
-                android:layout_weight="1"/>
-            <Button
-                android:id="@+id/btn2"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:text="일식"
-                android:layout_weight="1"/>
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="150dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/btn3"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:text="양식"
-                android:layout_weight="1"/>
-            <Button
-                android:id="@+id/btn4"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:text="중식"
-                android:layout_weight="1"/>
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="150dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/btn5"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:text="그외"
-                android:layout_weight="1"/>
-            <Button
+            <FrameLayout
                 android:id="@+id/btn6"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:text="모두"
-                android:layout_weight="1"/>
+                android:layout_weight="2"
+                android:background="#7B3B32"
+                android:layout_height="match_parent">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:id="@+id/all_txt"
+                    android:layout_height="wrap_content"
+                    android:textSize="10dp"
+                    android:layout_margin="10dp"
+                    android:textColor="#ffffff"
+                    android:text="모두보기"/>
+
+
+            </FrameLayout>
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_weight="1"
+                android:id="@+id/btn1"
+                android:background="@mipmap/foodstep_main_btn_01"
+                android:layout_height="match_parent">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="18dp"
+                    android:layout_margin="10dp"
+                    android:textColor="#ffffff"
+                    android:text="한식"/>
+
+            </FrameLayout>
+
+
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_weight="1"
+                android:layout_height="match_parent">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:orientation="vertical"
+                    android:layout_height="match_parent">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:orientation="horizontal"
+                        android:layout_weight="1"
+                        android:layout_height="match_parent">
+
+
+                        <FrameLayout
+                            android:id="@+id/btn4"
+                            android:layout_width="match_parent"
+                            android:layout_weight="1"
+                            android:background="@mipmap/foodstep_main_btn_03"
+                            android:layout_height="match_parent">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textSize="18dp"
+                                android:layout_margin="10dp"
+                                android:textColor="#ffffff"
+                                android:text="중식"/>
+                        </FrameLayout>
+                        <FrameLayout
+                            android:id="@+id/btn2"
+                            android:layout_width="match_parent"
+                            android:layout_weight="1"
+                            android:background="@mipmap/foodstep_main_btn_04"
+                            android:layout_height="match_parent">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textSize="18dp"
+                                android:layout_margin="10dp"
+                                android:textColor="#ffffff"
+                                android:text="일식"/>
+                        </FrameLayout>
+                    </LinearLayout>
+                    <FrameLayout
+                        android:layout_weight="1"
+                        android:id="@+id/btn3"
+                        android:background="@mipmap/foodstep_main_btn_02"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="18dp"
+                            android:layout_margin="10dp"
+                            android:textColor="#ffffff"
+                            android:text="양식"/>
+                    </FrameLayout>
+
+                </LinearLayout>
+            </FrameLayout>
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_weight="2"
+                android:id="@+id/btn5"
+                android:background="#441726"
+                android:layout_height="match_parent">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="18dp"
+                    android:layout_margin="10dp"
+                    android:textColor="#ffffff"
+                    android:text="그 외"/>
+            </FrameLayout>
         </LinearLayout>
     </LinearLayout>
 

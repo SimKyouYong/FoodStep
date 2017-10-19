@@ -7,6 +7,11 @@
     android:layout_height="match_parent"
     android:background="#000000"
     >
-
+    <ImageView
+        android:id="@+id/splash"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:scaleType="fitXY"
+        android:src="@drawable/img_intro" />
 
 </LinearLayout>
