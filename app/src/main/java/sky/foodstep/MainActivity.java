@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.View;
@@ -65,13 +66,7 @@ public class MainActivity extends ActivityEx {
         }
         Boolean isGpsEnabled = myLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
         Log.e("SKY" , "isGpsEnabled :: " + isGpsEnabled);
-        if (!isGpsEnabled) {
-            GPSSTATUS = false;
-            alertCheckGPS();
-            return;
-        }else{
-            settingGPS();
-        }
+        
 
 
         try {
@@ -107,7 +102,13 @@ public class MainActivity extends ActivityEx {
         findViewById(R.id.btn5).setOnClickListener(btnListener);
         findViewById(R.id.btn6).setOnClickListener(btnListener);
         findViewById(R.id.distance).setOnClickListener(btnListener1);
-
+        if (!isGpsEnabled) {
+            GPSSTATUS = false;
+            alertCheckGPS();
+            return;
+        }else{
+            settingGPS();
+        }
 
     }
     private void settingGPS() {
@@ -452,5 +453,21 @@ public class MainActivity extends ActivityEx {
     // This function converts radians to decimal degrees
     private static double rad2deg(double rad) {
         return (rad * 180 / Math.PI);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        Log.e("SKY" , "RESULT :: " + requestCode);
+        Log.e("SKY" , "resultCode :: " + resultCode);
+        Log.e("SKY" , "data :: " + data);
+        switch (requestCode) {
+            case 1:
+                settingGPS();
+                break;
+
+        }
+
     }
 }
