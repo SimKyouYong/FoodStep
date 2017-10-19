@@ -26,6 +26,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -39,15 +40,13 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener;
-
-
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -101,7 +100,8 @@ public class DetailActivity extends AppCompatActivity implements OnMapReadyCallb
     Comment_Adapter m_Adapter;
     ListView list_number;
 
-
+    private Button comment_ok;
+    private Boolean FirstFlag = false;
     private EditText edit_comment;
     private TextView name , address , menu;
     private MapFragment mapFragment;
@@ -122,6 +122,15 @@ public class DetailActivity extends AppCompatActivity implements OnMapReadyCallb
 
         list_number = (ListView)findViewById(R.id.list);
         edit_comment = (EditText)findViewById(R.id.edit_comment);
+        name = (TextView)findViewById(R.id.name);
+        address = (TextView)findViewById(R.id.address);
+        menu = (TextView)findViewById(R.id.menu);
+        comment_ok = (Button)findViewById(R.id.comment_ok);
+
+        mActivity = this;
+        Intent i = getIntent();
+        //Bundle bundle = getIntent().getExtras();
+        arr = i.getParcelableArrayListExtra("obj");
 
         mGoogleApiClient = new GoogleApiClient.Builder(DetailActivity.this)
                 .addConnectionCallbacks(DetailActivity.this)
@@ -131,37 +140,13 @@ public class DetailActivity extends AppCompatActivity implements OnMapReadyCallb
 
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        name = (TextView)findViewById(R.id.name);
-        address = (TextView)findViewById(R.id.address);
-        menu = (TextView)findViewById(R.id.menu);
-
-        Log.d("SKY", "onCreate");
-        mActivity = this;
-
-        Intent i = getIntent();
-        //Bundle bundle = getIntent().getExtras();
-        arr = i.getParcelableArrayListExtra("obj");
-        Log.d("SKY", "arr SIZE :: " + arr.size());
-
-        name.setText("" + arr.get(arr.size()-1).getNAME());
-        address.setText("주소 : " + arr.get(arr.size()-1).getADDRESS());
-        menu.setText("메뉴\n" + arr.get(arr.size()-1).getMENU());
 
         mapFragment = (MapFragment) getFragmentManager()
                 .findFragmentById(R.id.map);
+
         mapFragment.getMapAsync(DetailActivity.this);
 
-        findViewById(R.id.comment_ok).setOnClickListener(btnListener);
 
-
-
-        customProgressPop();
-        map.put("url", DEFINE.SERVER_URL + "FOODSTEP_COMMENT.php");
-        ThisDataIndex = arr.get(arr.size()-1).getKEY_INDEX();
-        map.put("DATA_INDEX", ThisDataIndex);
-        //스레드 생성
-        mThread = new AccumThread(this , mAfterAccum , map , 1 , 2 , val);
-        mThread.start();		//스레드 시작!!
 
     }
     //버튼 리스너 구현 부분
@@ -233,7 +218,7 @@ public class DetailActivity extends AppCompatActivity implements OnMapReadyCallb
     };
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        Log.d(TAG, "onMapReady :");
+        Log.e("SKY", "onMapReady :");
         mGoogleMap = googleMap;
         //런타임 퍼미션 요청 대화상자나 GPS 활성 요청 대화상자 보이기전에
         //지도의 초기위치를 서울로 이동
@@ -274,12 +259,24 @@ public class DetailActivity extends AppCompatActivity implements OnMapReadyCallb
             }
         });
 
+        if (!getIntent().getStringExtra("allcheck").equals("all")){
+            return;
+        }
         for (int i= 0; i < arr.size(); i++){
+            if(i == 0){
+                customProgressPop();
+                map.put("url", DEFINE.SERVER_URL + "FOODSTEP_COMMENT.php");
+                ThisDataIndex = arr.get(arr.size()-1).getKEY_INDEX();
+                map.put("DATA_INDEX", ThisDataIndex);
+                //스레드 생성
+                mThread = new AccumThread(this , mAfterAccum , map , 1 , 2 , val);
+                mThread.start();		//스레드 시작!!
+            }
             double wi = Double.parseDouble( arr.get(i).getLO_WI() );
             double gy = Double.parseDouble( arr.get(i).getLO_GY() );
 
-            //Log.e("SKY" , "위도 :: " + wi);
-            //Log.e("SKY" , "경도 :: " + gy);
+            Log.e("SKY" , "위도 :: " + wi);
+            Log.e("SKY" , "경도 :: " + gy);
             LatLng location = new LatLng(wi, gy);
 
             MarkerOptions markerOptions = new MarkerOptions();
@@ -390,16 +387,128 @@ public class DetailActivity extends AppCompatActivity implements OnMapReadyCallb
     public void onLocationChanged(Location location) {
 
 
-        Log.d(TAG, "onLocationChanged : ");
+        Log.e("SKY", "onLocationChanged : ");
 
-        String markerTitle = getCurrentAddress(location);
-        String markerSnippet = "위도:" + String.valueOf(location.getLatitude())
-                + " 경도:" + String.valueOf(location.getLongitude());
+        if (!FirstFlag){
+            FirstFlag = true;
+            String markerTitle = getCurrentAddress(location);
+            String markerSnippet = "위도:" + String.valueOf(location.getLatitude())
+                    + " 경도:" + String.valueOf(location.getLongitude());
+            Log.e("SKY", "onLocationChanged111 : "+ markerSnippet);
+            //현재 위치에 마커 생성하고 이동
+            setCurrentLocation(location, markerTitle, markerSnippet);
 
-        //현재 위치에 마커 생성하고 이동
-        setCurrentLocation(location, markerTitle, markerSnippet);
+            mCurrentLocatiion = location;
 
-        mCurrentLocatiion = location;
+            Intent i = getIntent();
+            //Bundle bundle = getIntent().getExtras();
+            arr = i.getParcelableArrayListExtra("obj");
+            Log.e("SKY", "arr SIZE :: " + arr.size());
+
+            Log.e("SKY", "allcheck :: " + getIntent().getStringExtra("allcheck"));
+
+
+            if (!getIntent().getStringExtra("allcheck").equals("all")){
+                double setting_distance = i.getDoubleExtra("distance" , 0);
+                Log.e("SKY", "setting_distance :: " + setting_distance);
+
+                //거리 계산
+                double my_wi = location.getLatitude();
+                double my_gy = location.getLongitude();
+                Log.e("SKY", "my_wi :: " + my_wi);
+                Log.e("SKY", "my_gy :: " + my_gy);
+
+                double food_wi = Double.parseDouble(arr.get(0).getLO_WI());
+                double food_gy = Double.parseDouble(arr.get(0).getLO_GY());
+                Log.e("SKY", "food_wi :: " + food_wi);
+                Log.e("SKY", "food_gy :: " + food_gy);
+
+
+                double distance_km = distance(my_wi, my_gy, food_wi, food_gy, "kilometer");
+                Log.e("SKY", "distance_km :: " + distance_km);
+
+                if (setting_distance > distance_km){
+
+                    double wi = Double.parseDouble( arr.get(0).getLO_WI() );
+                    double gy = Double.parseDouble( arr.get(0).getLO_GY() );
+
+                    //Log.e("SKY" , "위도 :: " + wi);
+                    //Log.e("SKY" , "경도 :: " + gy);
+                    LatLng location1 = new LatLng(wi, gy);
+
+                    MarkerOptions markerOptions = new MarkerOptions();
+                    markerOptions.position(location1);
+                    markerOptions.title(i+". " + arr.get(0).getNAME());
+                    markerOptions.snippet(arr.get(0).getADDRESS());
+                    mGoogleMap.addMarker(markerOptions);
+
+                    mGoogleMap.setOnMarkerClickListener(new OnMarkerClickListener() {
+
+                        public boolean onMarkerClick(Marker marker) {
+
+                            if(!marker.getTitle().contains(".")){
+                                return true;
+                            }
+                            String text = "[마커 클릭 이벤트] latitude ="
+                                    + marker.getPosition().latitude + ", longitude ="
+                                    + marker.getPosition().longitude;
+                            Log.e("SKY" , "marker.getTitle()" + marker.getTitle());
+                            String[] posittion = marker.getTitle().split(". ");
+                            //Toast.makeText(getApplicationContext(), text  + posittion[0], Toast.LENGTH_LONG).show();
+                            ThisDataIndex = posittion[0];
+
+                            name.setText("" + arr.get(Integer.parseInt(posittion[0])).getNAME());
+                            address.setText("주소 : " + arr.get(Integer.parseInt(posittion[0])).getADDRESS());
+                            menu.setText("메뉴\n" + arr.get(Integer.parseInt(posittion[0])).getMENU());
+
+
+                            customProgressPop();
+                            map.clear();
+                            map.put("url", DEFINE.SERVER_URL + "FOODSTEP_COMMENT.php");
+                            map.put("DATA_INDEX", posittion[0]);
+                            //스레드 생성
+                            mThread = new AccumThread(DetailActivity.this , mAfterAccum , map , 1 , 2 , val);
+                            mThread.start();		//스레드 시작!!
+                            return false;
+                        }
+                    });
+                    mGoogleMap.moveCamera(CameraUpdateFactory.newLatLng(location1));
+                    mGoogleMap.animateCamera(CameraUpdateFactory.zoomTo(10));
+
+
+
+                    //보여 줘야함.
+                    name.setText("" + arr.get(arr.size()-1).getNAME());
+                    address.setText("주소 : " + arr.get(arr.size()-1).getADDRESS());
+                    menu.setText("메뉴\n" + arr.get(arr.size()-1).getMENU());
+
+                    findViewById(R.id.comment_ok).setOnClickListener(btnListener);
+                    customProgressPop();
+                    map.put("url", DEFINE.SERVER_URL + "FOODSTEP_COMMENT.php");
+                    ThisDataIndex = arr.get(arr.size()-1).getKEY_INDEX();
+                    map.put("DATA_INDEX", ThisDataIndex);
+                    //스레드 생성
+                    mThread = new AccumThread(this , mAfterAccum , map , 1 , 2 , val);
+                    mThread.start();		//스레드 시작!!
+                }else{
+                    name.setText("");
+                    address.setText("");
+                    menu.setText("");
+
+                    comment_ok.setVisibility(View.GONE);
+                    edit_comment.setVisibility(View.GONE);
+                }
+            }
+
+
+
+
+
+
+        }else{
+            Log.e("SKY", "onLocationChanged else: ");
+        }
+
     }
 
 
@@ -776,4 +885,35 @@ public class DetailActivity extends AppCompatActivity implements OnMapReadyCallb
             {}
         }
     }
+
+    private static double distance(double lat1, double lon1, double lat2, double lon2, String unit) {
+
+        double theta = lon1 - lon2;
+        double dist = Math.sin(deg2rad(lat1)) * Math.sin(deg2rad(lat2)) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.cos(deg2rad(theta));
+
+        dist = Math.acos(dist);
+        dist = rad2deg(dist);
+        dist = dist * 60 * 1.1515;
+
+        if (unit == "kilometer") {
+            dist = dist * 1.609344;
+        } else if(unit == "meter"){
+            dist = dist * 1609.344;
+        }
+
+        return (dist);
+    }
+
+
+    // This function converts decimal degrees to radians
+    private static double deg2rad(double deg) {
+        return (deg * Math.PI / 180.0);
+    }
+
+    // This function converts radians to decimal degrees
+    private static double rad2deg(double rad) {
+        return (rad * 180 / Math.PI);
+    }
+
+
 }
