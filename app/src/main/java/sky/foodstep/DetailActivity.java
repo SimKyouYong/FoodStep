@@ -264,6 +264,10 @@ public class DetailActivity extends AppCompatActivity implements OnMapReadyCallb
         }
         for (int i= 0; i < arr.size(); i++){
             if(i == 0){
+                name.setText("" + arr.get(0).getNAME());
+                address.setText("주소 : " + arr.get(0).getADDRESS());
+                menu.setText("메뉴\n" + arr.get(0).getMENU());
+
                 customProgressPop();
                 map.put("url", DEFINE.SERVER_URL + "FOODSTEP_COMMENT.php");
                 ThisDataIndex = arr.get(arr.size()-1).getKEY_INDEX();
