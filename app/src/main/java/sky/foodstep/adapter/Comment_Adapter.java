@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import sky.foodstep.R;
 import sky.foodstep.common.CommonUtil;
 import sky.foodstep.obj.CommentObj;
-
+//AIzaSyC1bRHhlzxfHtELQLq1gqK2yV2XvfzXlgA
 public class Comment_Adapter extends BaseAdapter {
 	CommonUtil dataSet = CommonUtil.getInstance();
 

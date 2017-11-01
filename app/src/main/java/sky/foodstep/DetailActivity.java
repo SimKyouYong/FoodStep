@@ -324,7 +324,7 @@ public class DetailActivity extends AppCompatActivity implements OnMapReadyCallb
 
             if(i == (arr.size()-1)){
                 mGoogleMap.moveCamera(CameraUpdateFactory.newLatLng(location));
-                mGoogleMap.animateCamera(CameraUpdateFactory.zoomTo(10));
+                mGoogleMap.animateCamera(CameraUpdateFactory.zoomTo(17));
             }
 
         }
